@@ -1,0 +1,51 @@
+# Groww Algo Engine (C++) settings
+
+engine:
+  candle_interval: 5          # minutes, aligned to 09:15
+  timer_interval_sec: 1
+  square_off_time: "15:15"    # intraday positions are flattened here
+  state_file: run/state.json  # live state written by the engine, read by python/dashboard.py
+
+paper:
+  starting_capital: 1000000
+  slippage_bps: 1
+  brokerage_per_order: 20
+  charges_bps: 1.5            # statutory charges (STT, exchange, GST...) as bps of turnover
+
+risk:
+  max_daily_loss: 25000       # kill switch + flatten when day P&L <= -this
+  max_lots_per_order: 20
+  max_qty_per_order: 5000     # cash segment shares
+  max_order_value: 5000000
+  max_open_positions: 10
+  no_new_entries_after: "15:00"
+  enforce_market_hours: true
+
+demo:
+  speed: 30                   # simulated seconds per real second
+  tick_interval_sec: 0.25
+  seed: 7
+  annual_vol: 0.16
+  base_prices:
+    NIFTY: 25000
+    BANKNIFTY: 56000
+    RELIANCE: 1400
+
+# NSE trading holidays 2026
+holidays: ["2026-01-15", "2026-01-26", "2026-03-03", "2026-03-26", "2026-03-31", "2026-04-03",
+           "2026-04-14", "2026-05-01", "2026-05-28", "2026-06-26", "2026-09-14", "2026-10-02",
+           "2026-10-20", "2026-11-10", "2026-11-24", "2026-12-25"]
+
+# Instruments: "RELIANCE" (equity) or "NIFTY:FUT:0" (near-month future; 1 = next, 2 = far)
+strategies:
+  - id: ema_nifty_fut
+    type: ema_crossover
+    enabled: true
+    params: {instrument: "NIFTY:FUT:0", fast: 9, slow: 21, lots: 1, allow_short: true,
+             stop_loss_pct: 0.5, target_pct: 1.0}
+
+  - id: ema_reliance
+    type: ema_crossover
+    enabled: true
+    params: {instrument: "RELIANCE", fast: 12, slow: 26, qty: 100, allow_short: true,
+             stop_loss_pct: 0.6, target_pct: 1.2}
