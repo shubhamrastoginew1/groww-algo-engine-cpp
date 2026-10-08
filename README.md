@@ -55,25 +55,3 @@ Run the commands from the project root. Strategies and limits are set in `config
 1. Subclass `Strategy` (see `strategies/ema_crossover.*`) and override `on_init`, `on_candle`, `on_tick` or `on_fill`.
 2. Add one line to `create_strategy()` in `src/strategies/strategy.cpp`.
 3. Reference the new type in `config/settings.yaml`.
-
-## Design points (interview notes)
-
-- **One engine thread.** Strategy, risk and position code is single-threaded, so it needs no locks.
-  Other threads only hand data to that thread.
-- **Lock-free tick path.** The feed thread pushes into an SPSC ring: one `release` store per push,
-  one `acquire` load per pop, head and tail on separate cache lines (128 bytes on Apple Silicon),
-  and cached copies of the other side's index.
-- **Interned symbols.** `Tick` is a trivially copyable 24-byte struct (`SymbolId`, price, time), with no
-  strings on the hot path. Last traded prices live in a flat `vector<double>` indexed by `SymbolId`.
-- **Deferred events.** A fill raised while a strategy is handling a tick is queued and delivered
-  after that handler returns, which avoids re-entrant callbacks.
-- **Exits always allowed.** Risk blocks new exposure (kill switch, cut-off, limits), never a reducing order.
-- **Same code for backtest and demo.** The backtester drives the engine synchronously with a `SimClock`.
-  It fills at the next bar's open, so there is no look-ahead.
-- **Integer time.** Timestamps are int64 nanoseconds, and IST is a fixed +05:30 offset (no tz database).
-
-## Not ported (still in the Python project)
-
-Live Groww trading (login, websocket feed, REST orders), calendar spread / butterfly strategies
-with multi-leg execution, the SQLite journal and Telegram alerts. A live broker would implement
-the 3-method `Broker` interface (`orders/broker.hpp`).
